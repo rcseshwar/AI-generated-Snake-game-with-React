@@ -27,12 +27,15 @@ export const MusicPlayer: React.FC = () => {
     
     const playAudio = async () => {
       if (audioRef.current) {
+        // Reload the source when index changes to ensure fresh state
+        audioRef.current.load();
+        
         if (isPlaying) {
           try {
             await audioRef.current.play();
           } catch (e) {
-            console.error("Playback failed", e);
-            // Don't set error state for interruptions, only for load failures which handle via onError
+            // Avoid logging the full event object to prevent circular structure errors
+            console.error("Playback failed to start.");
           }
         } else {
           audioRef.current.pause();
@@ -40,7 +43,7 @@ export const MusicPlayer: React.FC = () => {
       }
     };
     playAudio();
-  }, [isPlaying, currentSongIndex]);
+  }, [currentSongIndex, isPlaying]);
 
   // Fake visualizer effect
   useEffect(() => {
@@ -59,12 +62,14 @@ export const MusicPlayer: React.FC = () => {
     if (nextIndex >= PLAYLIST.length) nextIndex = 0;
     if (nextIndex < 0) nextIndex = PLAYLIST.length - 1;
     setCurrentSongIndex(nextIndex);
+    // Ensure we keep playing if we were already playing, or start playing
     setIsPlaying(true);
     setError(false);
   };
 
   const handleAudioError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
-    console.error("Audio error event:", e);
+    // Avoid logging the full event object to prevent circular structure errors
+    console.error("Audio playback error occurred: Source not supported or network error.");
     setError(true);
     setIsPlaying(false);
   };
@@ -83,7 +88,6 @@ export const MusicPlayer: React.FC = () => {
         onEnded={() => handleSkip('next')}
         onError={handleAudioError}
         preload="auto"
-        crossOrigin="anonymous"
       />
 
       <div className="flex items-center justify-between mb-4 border-b border-gray-800 pb-2">
